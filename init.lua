@@ -703,6 +703,23 @@ do
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     -- ts_ls = {},
 
+    -- ── DevOps / dev stack (rafa) ───────────────────────────────
+    gopls = {}, -- Go
+    terraformls = {}, -- Terraform + OpenTofu (.tf/.tofu)
+    gh_actions_ls = {}, -- GitHub Actions workflows
+    yamlls = {}, -- YAML (k8s, compose, generic) w/ SchemaStore
+    bashls = {}, -- Bash / shell scripts
+    dockerls = {}, -- Dockerfile
+    docker_compose_language_service = {}, -- docker-compose.yml
+    jsonls = {}, -- JSON (+ schemas)
+    sqlls = {}, -- SQL
+    -- CLI tools (formatters/linters) installed by Mason, used by conform below
+    goimports = {},
+    gofumpt = {},
+    shfmt = {},
+    prettierd = {},
+    -- ────────────────────────────────────────────────────────────
+
     stylua = {}, -- Used to format Lua code
 
     -- Special Lua Config, as recommended by neovim help docs
@@ -796,10 +813,18 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
+      -- DevOps / dev stack (rafa)
+      go = { 'goimports', 'gofumpt' },
+      terraform = { 'terraform_fmt' },
+      tf = { 'terraform_fmt' },
+      ['terraform-vars'] = { 'terraform_fmt' },
+      sh = { 'shfmt' },
+      bash = { 'shfmt' },
+      yaml = { 'prettierd' },
+      json = { 'prettierd' },
+      jsonc = { 'prettierd' },
+      markdown = { 'prettierd' },
       -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
       -- You can use 'stop_after_first' to run the first available formatter from the list
       -- javascript = { "prettierd", "prettier", stop_after_first = true },
     },
@@ -904,7 +929,12 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = {
+    'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc',
+    -- DevOps / dev stack (rafa)
+    'go', 'gomod', 'gosum', 'gowork', 'terraform', 'hcl', 'yaml', 'json',
+    'dockerfile', 'sql', 'toml', 'ssh_config', 'git_config', 'gitignore', 'gitcommit', 'regex',
+  }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
