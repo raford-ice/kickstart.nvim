@@ -713,6 +713,7 @@ do
     docker_compose_language_service = {}, -- docker-compose.yml
     jsonls = {}, -- JSON (+ schemas)
     sqlls = {}, -- SQL
+    taplo = {}, -- TOML (sesh.toml schema, etc. — reads #:schema directives)
     -- CLI tools (formatters/linters) installed by Mason, used by conform below
     goimports = {},
     gofumpt = {},
