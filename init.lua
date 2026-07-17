@@ -740,7 +740,9 @@ do
       end,
       init_options = {
         experimentalFeatures = { validateOnSave = false, prefillRequiredFields = true },
-        indexing = { ignoreDirectoryNames = { '.terragrunt-cache', '.terraform' } },
+        -- NB: terraform-ls REJECTS '.terraform' here (it needs that dir for provider
+        -- schemas) and fails to start if you list it. Only ignore terragrunt's cache.
+        indexing = { ignoreDirectoryNames = { '.terragrunt-cache' } },
       },
     },
     tflint = { root_dir = terraform_root_dir }, -- Terraform linter (LSP)
