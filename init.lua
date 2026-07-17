@@ -728,7 +728,21 @@ do
 
     -- ── DevOps / dev stack (rafa) ───────────────────────────────
     gopls = {}, -- Go
-    terraformls = { root_dir = terraform_root_dir }, -- Terraform + OpenTofu (.tf/.tofu)
+    terraformls = { -- Terraform + OpenTofu (.tf/.tofu)
+      root_dir = terraform_root_dir,
+      -- Big Terragrunt monorepos (cube-infrastructure: 700+ .tf files) peg
+      -- terraform-ls at 100% CPU (then it gets SIGKILLed) via reference-count
+      -- codelens (30s+ per request) and semantic-token churn. Disable both —
+      -- treesitter handles highlighting; you rarely need inline ref counts here.
+      on_attach = function(client, _)
+        client.server_capabilities.codeLensProvider = nil
+        client.server_capabilities.semanticTokensProvider = nil
+      end,
+      init_options = {
+        experimentalFeatures = { validateOnSave = false, prefillRequiredFields = true },
+        indexing = { ignoreDirectoryNames = { '.terragrunt-cache', '.terraform' } },
+      },
+    },
     tflint = { root_dir = terraform_root_dir }, -- Terraform linter (LSP)
     gh_actions_ls = {}, -- GitHub Actions workflows
     yamlls = {}, -- YAML (k8s, compose, generic) w/ SchemaStore
