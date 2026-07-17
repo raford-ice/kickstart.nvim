@@ -690,6 +690,29 @@ do
   -- Enable the following language servers
   --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
   --  See `:help lsp-config` for information about keys and how to configure
+  -- Terraform/Terragrunt: attach terraform-ls / tflint at the nearest module dir
+  -- (a `terragrunt.hcl`, or a dir containing *.tf/*.tfvars), walking up from the
+  -- file. Fixes wrong roots in monorepos like cube-infrastructure/layers/01-base.
+  -- NB: Neovim's native lsp calls root_dir as (bufnr, on_dir); you must call
+  -- on_dir(path) — a returned value is silently ignored and the server won't start.
+  local function terraform_root_dir(bufnr, on_dir)
+    local path = vim.api.nvim_buf_get_name(bufnr)
+    if not path or path == '' then path = vim.uv.cwd() end
+    local stat = vim.uv.fs_stat(path)
+    local dir = (stat and stat.type == 'file') and vim.fs.dirname(path) or path
+    local start = dir
+    while dir do
+      if vim.fn.filereadable(dir .. '/terragrunt.hcl') == 1 then return on_dir(dir) end
+      if #vim.fn.globpath(dir, '*.tf', false, true) > 0 or #vim.fn.globpath(dir, '*.tfvars', false, true) > 0 then
+        return on_dir(dir)
+      end
+      local parent = vim.fs.dirname(dir)
+      if parent == dir then break end
+      dir = parent
+    end
+    return on_dir(start)
+  end
+
   ---@type table<string, vim.lsp.Config>
   local servers = {
     -- clangd = {},
@@ -705,7 +728,8 @@ do
 
     -- ── DevOps / dev stack (rafa) ───────────────────────────────
     gopls = {}, -- Go
-    terraformls = {}, -- Terraform + OpenTofu (.tf/.tofu)
+    terraformls = { root_dir = terraform_root_dir }, -- Terraform + OpenTofu (.tf/.tofu)
+    tflint = { root_dir = terraform_root_dir }, -- Terraform linter (LSP)
     gh_actions_ls = {}, -- GitHub Actions workflows
     yamlls = {}, -- YAML (k8s, compose, generic) w/ SchemaStore
     bashls = {}, -- Bash / shell scripts
@@ -777,7 +801,9 @@ do
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
+    'actionlint', -- GitHub Actions workflow linter (via nvim-lint)
+    'golangci-lint', -- Go linter (via nvim-lint)
+    'markdownlint', -- Markdown linter (kickstart lint default)
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -816,9 +842,12 @@ do
     formatters_by_ft = {
       -- DevOps / dev stack (rafa)
       go = { 'goimports', 'gofumpt' },
-      terraform = { 'terraform_fmt' },
-      tf = { 'terraform_fmt' },
-      ['terraform-vars'] = { 'terraform_fmt' },
+      -- OpenTofu (you run tofu, not terraform); .hcl -> terragrunt hclfmt
+      terraform = { 'tofu_fmt' },
+      tf = { 'tofu_fmt' },
+      ['terraform-vars'] = { 'tofu_fmt' },
+      hcl = { 'terragrunt_hclfmt' },
+      terragrunt = { 'terragrunt_hclfmt' },
       sh = { 'shfmt' },
       bash = { 'shfmt' },
       yaml = { 'prettierd' },
@@ -999,7 +1028,7 @@ do
   --
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
-  -- require 'kickstart.plugins.lint'
+  require 'kickstart.plugins.lint'
   -- require 'kickstart.plugins.autopairs'
   require 'kickstart.plugins.neo-tree'
   -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps

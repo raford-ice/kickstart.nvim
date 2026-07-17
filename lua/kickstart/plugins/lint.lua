@@ -5,6 +5,9 @@ vim.pack.add { 'https://github.com/mfussenegger/nvim-lint' }
 local lint = require 'lint'
 lint.linters_by_ft = {
   markdown = { 'markdownlint' }, -- Make sure to install `markdownlint` via mason / npm
+  go = { 'golangcilint' }, -- Go linter (mason: golangci-lint)
+  -- NOTE: actionlint is wired below via a filename-scoped autocmd, NOT here — it
+  -- must run only on GitHub Actions workflow files, not on every YAML buffer.
 }
 
 -- To allow other plugins to add linters to require('lint').linters_by_ft,
@@ -49,5 +52,15 @@ vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
     -- avoid superfluous noise, notably within the handy LSP pop-ups that
     -- describe the hovered symbol using Markdown.
     if vim.bo.modifiable then lint.try_lint() end
+  end,
+})
+
+-- actionlint: only lint GitHub Actions workflow files (running it on arbitrary
+-- YAML produces noise/errors). Scoped by filename pattern, not filetype.
+vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost' }, {
+  group = lint_augroup,
+  pattern = { '*/.github/workflows/*.yml', '*/.github/workflows/*.yaml' },
+  callback = function()
+    if vim.bo.modifiable then lint.try_lint 'actionlint' end
   end,
 })
