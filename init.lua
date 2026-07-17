@@ -936,9 +936,10 @@ do
     },
 
     completion = {
-      -- By default, you may press `<c-space>` to show the documentation.
-      -- Optionally, set `auto_show = true` to show the documentation after a delay.
-      documentation = { auto_show = false, auto_show_delay_ms = 500 },
+      -- Auto-show the docs window (field descriptions, resource docs from the
+      -- LSP schema) after a short delay as you scroll completions. `<c-space>`
+      -- still toggles it manually.
+      documentation = { auto_show = true, auto_show_delay_ms = 300 },
     },
 
     sources = {
